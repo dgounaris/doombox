@@ -1,0 +1,4 @@
+location ${PROXY_LOCATION} {
+    access_by_lua_block { ngx.sleep(${PROXY_DELAY}) }
+    proxy_pass  http://service;
+}

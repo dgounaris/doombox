@@ -1,0 +1,93 @@
+---
+- hosts: all
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - include: ./configure-azure-cli.yml
+
+    - name: Login to azure
+      shell: |
+        az login --service-principal --username "{{ az.sp.username }}" --password "{{ az.sp.password }}" --tenant "{{ az.sp.tenant }}"
+      args:
+        executable: /bin/bash
+      become: yes
+      become_user: root
+
+    - name: List acr images
+      shell: |
+        result="$(az acr repository list -n {{ az.acr.name }} --output tsv)"
+        echo "Discovered the following repositories and tags:"
+        for i in $result; do
+            echo "Repository $i:"
+            az acr repository show-tags -n {{ az.acr.name }} --repository $i;
+        done
+      args:
+        executable: /bin/bash
+      register: list_acrs
+
+    - name: Print acrs
+      debug:
+        msg: "{{ list_acrs.stdout }}"
+
+    - name: Upload base template file to storage location
+      shell: |
+        az storage file upload \
+        -s "{{ az.storage_account.fileshare }}" \
+        --source "{{ base_template_folder }}/default.conf.template" \
+        --account-name "{{ az.storage_account.name }}" \
+        --account-key "{{ az.storage_account.key }}"
+
+    - name: Upload location file to storage location
+      shell: |
+        az storage file upload \
+        -s "{{ az.storage_account.fileshare }}" \
+        --source "{{ locations_template_folder }}/location.conf.template" \
+        --account-name "{{ az.storage_account.name }}" \
+        --account-key "{{ az.storage_account.key }}"
+
+    # This is a step that can be skipped by omitting this section in the config, if you already have a way of setting up machines,
+    # or the PaaS nature of container instances doesn't work for you
+    - name: Deploy app containers
+      shell: |
+        az container create \
+          --name "{{ item.name }}" \
+          --resource-group "{{ az.acr.resource_group }}" \
+          --image "{{ item.image }}" \
+          --registry-login-server "{{ az.acr.server }}" \
+          --registry-username "{{ az.acr.username }}" \
+          --registry-password "{{ az.acr.password }}" \
+          --dns-name-label "{{ item.name }}" \
+          --ports {{ item.ports | join(' ') }} \
+          --cpu "{{ item.cpu | default('1') }}" \
+          --memory "{{ item.memory | default('1') }}" \
+          --query ipAddress.fqdn
+      args:
+        executable: /bin/bash
+      loop: "{{ az.containers }}"
+
+    - name: Deploy proxy containers
+      shell: |
+        az container create \
+          --name "{{ item.name }}" \
+          --resource-group "{{ az.acr.resource_group }}" \
+          --image "{{ item.image }}" \
+          --registry-login-server "{{ az.acr.server }}" \
+          --registry-username "{{ az.acr.username }}" \
+          --registry-password "{{ az.acr.password }}" \
+          --dns-name-label "{{ item.name }}" \
+          --ports {{ item.ports | join(' ') }} \
+          --cpu "{{ item.cpu | default('1') }}" \
+          --memory "{{ item.memory | default('1') }}" \
+          --environment-variables PROXY_TARGET="{{ item.target }}" \
+          PROXY_LOCATIONS="{{ item.locations | map(attribute='location') | join(' ') }}" \
+          PROXY_LOCATION_DELAYS="{{ item.locations | map(attribute='delay') | join(' ') }}" \
+          --azure-file-volume-account-key "{{ az.storage_account.key }}" \
+          --azure-file-volume-account-name "{{ az.storage_account.name }}" \
+          --azure-file-volume-share-name "{{ az.storage_account.fileshare }}" \
+          --azure-file-volume-mount-path "/mnt/doombox" \
+          --query ipAddress.fqdn
+      args:
+        executable: /bin/bash
+      loop: "{{ az.proxy_containers }}"
+      

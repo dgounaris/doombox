@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Doombox": {
+      "commandName": "Project",
+      "commandLineArgs": "bootstrap --serviceconfigpath \"C:\\Users\\dgounaris\\source\\repos_mine\\Doombox\\Doombox\\templates\\service_config.yml\""
+    }
+  }
+}

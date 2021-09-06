@@ -1,0 +1,63 @@
+﻿az:
+  sp:
+    username: "<service_principal_username>"
+    password: "<service_principal_password>"
+    tenant: "<tenant_id>"
+  acr:
+    resource_group: "<resource_group>"
+    name: doomboxcontainers
+    server: "<acr_server>"
+    username: "<containers_username>"
+    password: "<containers_password>"
+  containers:
+    - name: doombox-demo-1
+      image: doomboxcontainers.azurecr.io/hello-rest:latest
+      cpu: 1
+      memory: 1
+      ports:
+        - 5050
+    - name: doombox-demo-2
+      image: doomboxcontainers.azurecr.io/hello-rest:latest
+      cpu: 1
+      memory: 1
+      ports:
+        - 5050
+  proxy_containers:
+    - name: doombox-demo-proxy-1
+      image: doomboxcontainers.azurecr.io/openresty_doombox:latest
+      cpu: 1
+      memory: 1
+      ports:
+        - 80
+        - 443
+      target: doombox-demo-1.westeurope.azurecontainer.io:5050 # if some preprocessing happens, this can be the app container name instead 
+      locations:
+        - location: "/"
+          delay: 5
+    - name: doombox-demo-proxy-2
+      image: doomboxcontainers.azurecr.io/openresty_doombox:latest
+      cpu: 1
+      memory: 1
+      ports:
+        - 80
+        - 443
+      target: doombox-demo-2.westeurope.azurecontainer.io:5050 # if some preprocessing happens, this can be the app container name instead
+      locations:
+        - location: "/"
+          delay: 1
+    - name: doombox-demo-proxy-1-v2
+      image: doomboxcontainers.azurecr.io/openresty_doombox:latest
+      cpu: 1
+      memory: 1
+      ports:
+        - 80
+        - 443
+      target: doombox-demo-1.westeurope.azurecontainer.io:5050 # if some preprocessing happens, this can be the app container name instead
+      locations:
+        - location: "/"
+          delay: 1
+  storage_account:
+    name: "doomboxstorage"
+    key: "<storage_acc_key>"
+    fileshare: "locations1"
+ansible_sudo_pass: "<sudo_pass>"

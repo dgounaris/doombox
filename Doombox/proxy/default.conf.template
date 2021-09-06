@@ -1,0 +1,11 @@
+upstream service {
+  server        ${PROXY_TARGET};
+}
+
+server {
+  listen       80;
+  listen  [::]:80;
+  server_name  localhost;
+
+  ${PROXY_LOCATIONS_RESOLVED}
+}

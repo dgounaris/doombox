@@ -1,0 +1,36 @@
+---
+- hosts: all
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - include: ./configure-azure-cli.yml
+
+    - name: Login to azure
+      shell: |
+        az login --service-principal --username "{{ az.sp.username }}" --password "{{ az.sp.password }}" --tenant "{{ az.sp.tenant }}"
+      args:
+        executable: /bin/bash
+      become: yes
+      become_user: root
+
+    - name: Teardown proxy containers
+      shell: |
+       az container delete \
+          --name "{{ item.name }}" \
+          --resource-group "{{ az.acr.resource_group }}" \
+          --yes
+      args:
+        executable: /bin/bash
+      loop: "{{ az.proxy_containers }}"
+
+    - name: Teardown containers
+      shell: |
+        az container delete \
+          --name "{{ item.name }}" \
+          --resource-group "{{ az.acr.resource_group }}" \
+          --yes
+      args:
+        executable: /bin/bash
+      loop: "{{ az.containers }}"
+      

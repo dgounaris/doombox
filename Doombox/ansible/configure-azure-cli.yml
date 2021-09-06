@@ -1,0 +1,44 @@
+---
+- name: Install required packages
+  apt:
+    pkg:
+    - ca-certificates
+    - curl
+    - apt-transport-https
+    - lsb-release
+    - gnupg
+  register: apt_action
+  retries: 100
+  until: apt_action is success or ('Failed to lock apt for exclusive operation' not in apt_action.msg and '/var/lib/dpkg/lock' not in apt_action.msg)
+  become: yes
+  become_user: root
+
+- name: Get Msft signing key
+  shell: |
+    curl -sL https://packages.microsoft.com/keys/microsoft.asc |
+    gpg --dearmor |
+    tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: root
+
+- name: Add azure cli software repo
+  shell: |
+    AZ_REPO=$(lsb_release -cs)
+    echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" |
+    tee /etc/apt/sources.list.d/azure-cli.list
+  args:
+    executable: /bin/bash
+  become: yes
+  become_user: root
+
+- name: Install azure cli
+  apt:
+    pkg:
+    - azure-cli
+  register: apt_action
+  retries: 100
+  until: apt_action is success or ('Failed to lock apt for exclusive operation' not in apt_action.msg and '/var/lib/dpkg/lock' not in apt_action.msg)
+  become: yes
+  become_user: root
