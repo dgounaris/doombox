@@ -1,5 +1,5 @@
 # Doombox
-Disclaimer: This project was made for fun and for familiarizing myself with ansible and nginx, I do not consider this to be a bullet-proof solution at its current state.
+Disclaimer: This project was made for fun and for familiarizing myself with ansible and nginx, I do not consider this to be a recommended solution.
 
 This project offers a way to introduce artificial network delays in service communication with the use of reverse proxies.
 
