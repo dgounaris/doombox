@@ -9,3 +9,9 @@ This project offers a way to introduce artificial network delays in service comm
 - You need to have an Azure file storage. This file storage will be used to access the default and location files, found in the proxy folder.
   This was done to allow publishing the Docker image while allowing custom default and location templates (i.e. different ports, protocols etc),
   however removing the steps requiring the file storage and instead just copying the template files during the Dockerfile execution should suffice.
+
+## Getting started
+
+- Build the project
+- Bootstrap the project using `./Doombox bootstrap --serviceconfigpath ./ansible/vars.yml`
+- Teardown the project using `./Doombox teardown --serviceconfigpath ./ansible/vars.yml`
